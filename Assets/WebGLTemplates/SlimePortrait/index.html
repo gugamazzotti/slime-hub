@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>{{{ PRODUCT_NAME }}}</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #101814;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #unity-container {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: #101814;
+    }
+    #unity-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: #101814;
+    }
+    #unity-loading, #unity-error {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: center;
+      font-family: sans-serif;
+      color: #e7f6df;
+      pointer-events: none;
+    }
+    #unity-loading .bar {
+      width: 60%;
+      max-width: 280px;
+      height: 8px;
+      margin: 16px auto 0;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #unity-loading .bar > div {
+      width: 0%;
+      height: 100%;
+      background: #8ee86a;
+    }
+    #unity-error { color: #ffb4b4; padding: 0 24px; }
+  </style>
+</head>
+<body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" width={{{ WIDTH }}} height={{{ HEIGHT }}} tabindex="-1"></canvas>
+    <div id="unity-loading">
+      <div>Carregando Slime Hub…</div>
+      <div class="bar"><div id="unity-progress"></div></div>
+    </div>
+    <div id="unity-error" style="display:none"></div>
+  </div>
+  <script>
+    (function () {
+      var path = window.location.pathname;
+      if (path.toLowerCase().endsWith("/index.html")) path = path.slice(0, -"index.html".length);
+      if (!path.endsWith("/")) path += "/";
+      var base = document.createElement("base");
+      base.href = path;
+      document.head.appendChild(base);
+    })();
+
+    var container = document.querySelector("#unity-container");
+    var canvas = document.querySelector("#unity-canvas");
+    var loading = document.querySelector("#unity-loading");
+    var progress = document.querySelector("#unity-progress");
+    var errorBox = document.querySelector("#unity-error");
+    var portraitAspect = {{{ WIDTH }}} / {{{ HEIGHT }}};
+
+    function viewportSize() {
+      var vv = window.visualViewport;
+      if (vv && vv.width > 0 && vv.height > 0) return { w: vv.width, h: vv.height };
+      return { w: window.innerWidth || 540, h: window.innerHeight || 960 };
+    }
+
+    function fit() {
+      var vp = viewportSize();
+      var vw = vp.w;
+      var vh = vp.h;
+      var w;
+      var h;
+      if (vw > vh) {
+        h = vh;
+        w = vh * portraitAspect;
+        if (w > vw) {
+          w = vw;
+          h = vw / portraitAspect;
+        }
+      } else {
+        w = vw;
+        h = vh;
+      }
+      container.style.width = Math.max(1, Math.floor(w)) + "px";
+      container.style.height = Math.max(1, Math.floor(h)) + "px";
+    }
+
+    fit();
+    window.addEventListener("resize", fit);
+    window.addEventListener("orientationchange", fit);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
+
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+    var config = {
+      dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+      frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+      codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+#if MEMORY_FILENAME
+      memoryUrl: buildUrl + "/{{{ MEMORY_FILENAME }}}",
+#endif
+#if SYMBOLS_FILENAME
+      symbolsUrl: buildUrl + "/{{{ SYMBOLS_FILENAME }}}",
+#endif
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: {{{ JSON.stringify(COMPANY_NAME) }}},
+      productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
+      productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
+    };
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (p) {
+        if (progress) progress.style.width = (100 * p) + "%";
+      }).then(function () {
+        if (loading) loading.style.display = "none";
+        canvas.focus();
+        fit();
+      }).catch(function (message) {
+        if (loading) loading.style.display = "none";
+        if (errorBox) {
+          errorBox.style.display = "block";
+          errorBox.textContent = message;
+        }
+      });
+    };
+    script.onerror = function () {
+      if (loading) loading.style.display = "none";
+      if (errorBox) {
+        errorBox.style.display = "block";
+        errorBox.textContent = "Não foi possível carregar o jogo.";
+      }
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

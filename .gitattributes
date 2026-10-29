@@ -1,0 +1,16 @@
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.psd binary
+*.exr binary
+*.tga binary
+*.fbx binary
+*.dll binary
+*.so binary
+*.a binary
+*.exe binary
+*.unityweb binary
+*.wasm binary
+*.data binary

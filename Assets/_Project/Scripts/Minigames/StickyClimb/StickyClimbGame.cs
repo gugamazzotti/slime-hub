@@ -49,6 +49,7 @@ namespace SlimeHub.Minigames
         FeelBurst burst;
         SoftCamera rig;
         Transform acidLip;
+        bool recovered;
         const int AimCount = 12;
         Transform[] aimDots;
         Material aimMaterial;
@@ -214,7 +215,18 @@ namespace SlimeHub.Minigames
             float height = stuck ? anchor.y : slime.transform.position.y;
             maxHeight = Mathf.Max(maxHeight, height);
             if (height - 0.42f <= acid)
+            {
+                if (!recovered)
+                {
+                    recovered = true;
+                    StickAt(new Vector3(-config.climbHalfWidth + 0.42f, acid + 1.35f, 0f), Vector3.right, true);
+                    shell.Popup(Loc.Get("hud.recover"), LabPalette.Mint);
+                    if (ServiceLocator.TryGet<IAudioService>(out var save))
+                        save.Play(Sfx.Bloop, 1.15f);
+                    return;
+                }
                 fsm.Change(gameOver);
+            }
 
             UpdateAcidVisual();
             FadeGoo();

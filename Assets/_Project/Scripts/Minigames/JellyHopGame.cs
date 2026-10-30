@@ -125,12 +125,19 @@ namespace SlimeHub.Minigames
             if (countT > 2.3f)
             {
                 shell.ShowCountdown("");
+                grounded = false;
+                Vector3 kick = body.linearVelocity;
+                kick.y = 9.6f;
+                kick.z = 0f;
+                body.linearVelocity = kick;
                 SetPhase(Phase.Play);
             }
         }
 
         void TickPlay()
         {
+            if (body.linearVelocity.y > 2.5f)
+                grounded = false;
             PointerState pointer = default;
             if (ServiceLocator.TryGet<TouchInputService>(out var input))
                 pointer = input.State;

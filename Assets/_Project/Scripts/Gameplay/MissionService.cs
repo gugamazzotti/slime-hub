@@ -18,7 +18,7 @@ namespace SlimeHub.Gameplay
         {
             string today = DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
             PlayerData data = save.Data;
-            if (data.missionDate == today && data.missions != null && data.missions.Count == 3)
+            if (data.missionDate == today && data.missions != null && data.missions.Count == 3 && !LegacyMissions(data))
                 return;
 
             DailyMissionSO[] pool = DailyMissionSO.Pool();
@@ -26,11 +26,22 @@ namespace SlimeHub.Gameplay
             var random = new System.Random(seed);
             data.missions.Clear();
             data.missionDate = today;
-            AddRolled(data, pool, MissionMetric.TubeMass, random);
-            AddRolled(data, pool, MissionMetric.CriticalSeconds, random);
-            AddRolled(data, pool, MissionMetric.ClimbHeight, random);
+            AddRolled(data, pool, MissionMetric.HopLands, random);
+            AddRolled(data, pool, MissionMetric.MergeScore, random);
+            AddRolled(data, pool, MissionMetric.GulpEaten, random);
             save.SaveSoon();
             GameEvents.RaiseMissions();
+        }
+
+        static bool LegacyMissions(PlayerData data)
+        {
+            for (int i = 0; i < data.missions.Count; i++)
+            {
+                string id = data.missions[i].id;
+                if (id != null && (id.StartsWith("tube") || id.StartsWith("crit") || id.StartsWith("climb")))
+                    return true;
+            }
+            return false;
         }
 
         static void AddRolled(PlayerData data, DailyMissionSO[] pool, MissionMetric metric, System.Random random)

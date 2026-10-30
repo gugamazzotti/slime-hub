@@ -29,7 +29,7 @@ namespace SlimeHub.Minigames
         float nextPadY = 0.4f;
         float camY = 1.2f;
         bool grounded;
-        float coyote;
+        float nextLand;
         Vector3 savedGravity;
         Material padMat;
         Transform sky;
@@ -131,7 +131,6 @@ namespace SlimeHub.Minigames
 
         void TickPlay()
         {
-            coyote -= Time.deltaTime;
             PointerState pointer = default;
             if (ServiceLocator.TryGet<TouchInputService>(out var input))
                 pointer = input.State;
@@ -171,8 +170,10 @@ namespace SlimeHub.Minigames
         {
             if (normal.y < 0.55f || grounded || phase == Phase.Pause || phase == Phase.Over)
                 return;
+            if (Time.time < nextLand || body.linearVelocity.y > 2f)
+                return;
             grounded = true;
-            coyote = 0.14f;
+            nextLand = Time.time + 0.45f;
             squash = 0.42f;
             Vector3 velocity = body.linearVelocity;
             velocity.y = 9.6f;

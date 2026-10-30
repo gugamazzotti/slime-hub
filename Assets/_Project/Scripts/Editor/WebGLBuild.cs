@@ -13,7 +13,7 @@ namespace SlimeHub.EditorTools
     {
         public static void Build()
         {
-            string output = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "docs"));
+            string output = ResolveOutput();
             if (Directory.Exists(output))
                 Directory.Delete(output, true);
             Directory.CreateDirectory(output);
@@ -50,6 +50,18 @@ namespace SlimeHub.EditorTools
             File.WriteAllText(Path.Combine(output, ".nojekyll"), string.Empty);
             File.WriteAllText(StatusPath(), "ready " + output);
             Debug.Log("WebGL build ready at " + output);
+        }
+
+        static string ResolveOutput()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] == "-customBuildPath" && !string.IsNullOrEmpty(args[i + 1]))
+                    return Path.GetFullPath(args[i + 1]);
+            }
+
+            return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "docs"));
         }
 
         static string StatusPath()

@@ -47,3 +47,5 @@ Unity.exe -batchmode -nographics -quit -projectPath . -buildTarget WebGL -execut
 ```
 
 That writes a Brotli build with decompression fallback into `docs`, so a static host such as GitHub Pages can serve it without custom compression headers. Publish the `docs` folder from the `main` branch to update the play link.
+
+A push to `daily/**` runs `.github/workflows/webgl-preview.yml`. GameCI builds the same player into a throwaway folder and publishes it on a separate preview branch. That job does not commit `docs` and does not change the GitHub Pages source, so the live site stays the `main` build.

@@ -1,0 +1,95 @@
+name: WebGL Preview
+
+on:
+  push:
+    branches:
+      - "daily/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: webgl-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build WebGL preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-SlimeHub-WebGL-6000.3.26f1-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+
+      - name: Build
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+          unityVersion: 6000.3.26f1
+          customImage: unityci/editor:ubuntu-6000.3.26f1-webgl-3.2.2
+          buildsPath: build
+          buildName: WebGL
+          buildMethod: SlimeHub.EditorTools.WebGLBuild.Build
+
+      - name: Fix artifact ownership
+        run: |
+          for d in build Library; do
+            if [ -d "$d" ]; then sudo chown -R "$(id -u):$(id -g)" "$d"; fi
+          done
+
+      - name: Locate WebGL output
+        id: webgl
+        run: |
+          set -euo pipefail
+          INDEX=$(find build -name index.html -print | head -n 1)
+          if [ -z "$INDEX" ]; then
+            echo "::error::index.html não encontrado"
+            find build -type f | head -200 >&2 || true
+            exit 1
+          fi
+          DIR=$(dirname "$INDEX")
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+          echo "Build em $DIR"
+          find "$DIR" -type f -printf '%s %p\n' | sort -n
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webgl-preview
+          path: ${{ steps.webgl.outputs.dir }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish preview branch
+        env:
+          PREVIEW_BRANCH: cursor/preview-climb-aim-2518
+          SOURCE_DIR: ${{ steps.webgl.outputs.dir }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/preview-site
+          mkdir -p /tmp/preview-site
+          cp -a "$SOURCE_DIR"/. /tmp/preview-site/
+          test -f /tmp/preview-site/index.html
+          cd /tmp/preview-site
+          git init
+          git checkout -b "$PREVIEW_BRANCH"
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Preview WebGL da Escalada Pegajosa"
+          git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${PREVIEW_BRANCH}"
+          sha=$(git rev-parse HEAD)
+          url="https://rawcdn.githack.com/${GITHUB_REPOSITORY}/${sha}/index.html"
+          echo "preview_url=$url" >> "$GITHUB_OUTPUT"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Preview: $url"

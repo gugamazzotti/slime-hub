@@ -75,7 +75,7 @@ namespace SlimeHub.Core
             Add("hud.ready", "get ready", "prepare-se", "prepárate");
             Add("hud.peak", "peak {0} kg", "pico {0} kg", "pico {0} kg");
             Add("hud.hold", "hold to inflate", "segure para inflar", "mantén para inflar");
-            Add("hud.pull", "Pull and release", "Puxe e solte", "Tira y suelta");
+            Add("hud.pull", "Pull and release. Dots show the jump.", "Puxe e solte. Os pontos mostram o salto.", "Tira y suelta. Los puntos muestran el salto.");
             Add("hud.steer", "Drag to steer. Pinch to split.", "Arraste para desviar. Pinça divide.", "Arrastra para girar. Pellizca para dividir.");
             Add("hud.acid", "acid {0} m", "ácido {0} m", "ácido {0} m");
 

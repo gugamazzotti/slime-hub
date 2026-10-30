@@ -46,6 +46,9 @@ namespace SlimeHub.Minigames
         Vector3 savedGravity;
         readonly List<Transform> goo = new List<Transform>();
         int gooCursor;
+        const int AimCount = 12;
+        Transform[] aimDots;
+        Material aimMaterial;
 
         void Awake()
         {
@@ -216,6 +219,7 @@ namespace SlimeHub.Minigames
             float gap = Mathf.Max(0f, height - acid);
             shell.SetHud(maxHeight.ToString("0.0") + " m", Loc.Format("hud.acid", gap.ToString("0.0")));
             shell.SetMeter(Mathf.Clamp01(gap / 3.2f));
+            ShowAim();
         }
 
         void ReadAim()
@@ -377,6 +381,85 @@ namespace SlimeHub.Minigames
                 backdrop.position = new Vector3(0f, focus, 3f);
         }
 
+        void EnsureAim()
+        {
+            if (aimDots != null)
+                return;
+            Color color = slime != null ? slime.Look.Rim : new Color(0.85f, 1f, 0.7f, 1f);
+            if (color.maxColorComponent < 0.35f)
+                color = new Color(0.85f, 1f, 0.72f, 1f);
+            color = Color.Lerp(color, new Color(0.92f, 1f, 0.78f, 1f), 0.35f);
+            color.a = 0.92f;
+            aimMaterial = SlimeMaterials.CreateUnlit(color, false, 0.65f);
+            aimDots = new Transform[AimCount];
+            Mesh mesh = SlimeMeshFactory.SharedBlob(0, 0.5f);
+            for (int i = 0; i < AimCount; i++)
+            {
+                var dot = new GameObject("AimDot");
+                var filter = dot.AddComponent<MeshFilter>();
+                filter.sharedMesh = mesh;
+                var renderer = dot.AddComponent<MeshRenderer>();
+                renderer.sharedMaterial = aimMaterial;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+                renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                dot.SetActive(false);
+                aimDots[i] = dot.transform;
+            }
+        }
+
+        void HideAim()
+        {
+            if (aimDots == null)
+                return;
+            for (int i = 0; i < aimDots.Length; i++)
+            {
+                if (aimDots[i] != null)
+                    aimDots[i].gameObject.SetActive(false);
+            }
+        }
+
+        void ShowAim()
+        {
+            bool show = stuck && aiming && pull.magnitude >= 0.28f;
+            if (!show)
+            {
+                HideAim();
+                return;
+            }
+
+            EnsureAim();
+            Vector3 position = anchor + pull;
+            Vector3 velocity = pull * config.climbPower;
+            velocity.z = 0f;
+            Vector3 gravity = new Vector3(0f, -config.climbGravity, 0f);
+            const float step = 0.05f;
+            const float damp = 0.15f;
+            float inset = 0.42f;
+            float minX = -config.climbHalfWidth + inset;
+            float maxX = config.climbHalfWidth - inset;
+            float floor = acid + 0.3f;
+            int shown = 0;
+            for (int n = 0; n < 40 && shown < aimDots.Length; n++)
+            {
+                velocity += gravity * step;
+                velocity /= 1f + damp * step;
+                position += velocity * step;
+                if (position.x < minX || position.x > maxX || position.y <= floor)
+                    break;
+                Transform dot = aimDots[shown];
+                dot.gameObject.SetActive(true);
+                float size = Mathf.Lerp(0.2f, 0.09f, shown / (float)(aimDots.Length - 1));
+                dot.position = new Vector3(position.x, position.y, -0.2f);
+                dot.localScale = Vector3.one * size;
+                shown++;
+            }
+
+            for (int i = shown; i < aimDots.Length; i++)
+                aimDots[i].gameObject.SetActive(false);
+        }
+
         Vector3 ScreenToPlane(Vector2 screen)
         {
             Ray ray = cam.ScreenPointToRay(screen);
@@ -398,6 +481,7 @@ namespace SlimeHub.Minigames
             }
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
                 audio.SetStretchLoop(false, 1f);
+            HideAim();
             HitStop.Play(0.1f, 0.42f);
             score = Mathf.RoundToInt(maxHeight * 10f);
             reward = Mathf.Max(2, Mathf.RoundToInt(maxHeight * 2f));

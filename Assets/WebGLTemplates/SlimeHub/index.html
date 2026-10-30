@@ -4,6 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
     <title>{{{ PRODUCT_NAME }}}</title>
+    <script>
+      (function () {
+        var path = location.pathname;
+        if (/\/index\.html$/i.test(path)) path = path.slice(0, -"index.html".length);
+        if (path.charAt(path.length - 1) !== "/") path += "/";
+        var base = document.createElement("base");
+        base.href = path;
+        document.head.appendChild(base);
+      })();
+    </script>
     <style>
       html, body {
         margin: 0;

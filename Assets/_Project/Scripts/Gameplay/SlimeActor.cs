@@ -38,6 +38,8 @@ namespace SlimeHub.Gameplay
         JellyMote[] motes;
         bool gameplayStretch;
         bool grounded;
+        float flatten;
+        Vector3 flattenAxis = Vector3.up;
         float groundedUntil;
         float nextImpactSound;
         float blink = -1f;
@@ -212,6 +214,9 @@ namespace SlimeHub.Gameplay
             if (Deformer == null || amount <= 0f)
                 return;
             Deformer.Wake();
+            if (worldNormal.sqrMagnitude > 0.0001f)
+                flattenAxis = worldNormal.normalized;
+            flatten = Mathf.Clamp(Mathf.Max(flatten, amount), 0f, 0.42f);
         }
 
         void Update()
@@ -221,6 +226,13 @@ namespace SlimeHub.Gameplay
             if (Deformer == null || gameplayStretch)
                 return;
             StepSpring();
+            if (flatten <= 0.001f)
+                return;
+            float along = Mathf.Lerp(1f, 0.64f, flatten / 0.42f);
+            Deformer.SetStretch(flattenAxis, along);
+            flatten = Mathf.MoveTowards(flatten, 0f, Time.deltaTime * 1.7f);
+            if (flatten <= 0.001f)
+                Deformer.SetStretch(Vector3.up, 1f);
         }
 
         void LateUpdate()

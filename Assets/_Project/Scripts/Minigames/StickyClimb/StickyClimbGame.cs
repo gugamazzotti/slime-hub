@@ -46,6 +46,9 @@ namespace SlimeHub.Minigames
         Vector3 savedGravity;
         readonly List<Transform> goo = new List<Transform>();
         int gooCursor;
+        FeelBurst burst;
+        SoftCamera rig;
+        Transform acidLip;
         const int AimCount = 12;
         Transform[] aimDots;
         Material aimMaterial;
@@ -61,16 +64,11 @@ namespace SlimeHub.Minigames
             cam.orthographic = true;
             cam.orthographicSize = 6.2f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.06f, 0.08f, 0.16f);
+            cam.backgroundColor = LabPalette.ClimbSky;
             cam.transform.rotation = Quaternion.identity;
-
-            backdrop = GameObject.CreatePrimitive(PrimitiveType.Quad).transform;
-            var backdropObject = backdrop.gameObject;
-            Destroy(backdropObject.GetComponent<Collider>());
-            backdropObject.name = "Backdrop";
-            backdrop.localScale = new Vector3(10f, 16f, 1f);
-            backdropObject.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(
-                new Color(0.07f, 0.1f, 0.2f, 1f), true, 0f, 0.22f, new Color(0.35f, 0.75f, 0.95f, 1f));
+            rig.FocusY = 1.6f;
+            backdrop = LabStage.Build(LabPalette.ClimbSky, LabPalette.ClimbGrid, 12f, 18f);
+            burst = FeelBurst.Create();
 
             Wall(-config.climbHalfWidth - 0.2f, true);
             Wall(config.climbHalfWidth + 0.2f, false);
@@ -78,8 +76,13 @@ namespace SlimeHub.Minigames
             acidView = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
             Destroy(acidView.GetComponent<Collider>());
             acidView.name = "Acid";
-            acidView.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(new Color(0.72f, 0.95f, 0.18f, 0.55f), false, 0.45f, 0f, new Color(0.95f, 1f, 0.45f, 1f));
+            acidView.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(new Color(0.62f, 0.95f, 0.22f, 0.62f), false, 0.55f, 0f, new Color(0.95f, 1f, 0.5f, 1f));
             acidView.SetParent(transform, false);
+            acidLip = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
+            Destroy(acidLip.GetComponent<Collider>());
+            acidLip.name = "AcidLip";
+            acidLip.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(new Color(0.86f, 1f, 0.45f, 0.9f), false, 0.2f);
+            acidLip.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             UpdateAcidVisual();
 
             slime = SlimeActor.Create(Vector3.zero, 0.42f, AppQuality.LowMemory ? 1 : 2, true, true);
@@ -287,6 +290,10 @@ namespace SlimeHub.Minigames
             slime.Deformer.SnapFlow(-launched * 1.05f);
             slime.Deformer.Nudge(velocity);
             slime.Deformer.Pulse(1.5f);
+            slime.SetGameplayStretch(velocity.sqrMagnitude > 0.01f ? velocity.normalized : Vector3.up, 1.4f);
+            burst.Pop(anchor, slime.Look.Base, 8, 2.5f);
+            rig.Kick(0.06f);
+            shell.PunchHud();
             pull = Vector3.zero;
             if (ServiceLocator.TryGet<IAudioService>(out var pop))
                 pop.Play(Sfx.Pop, Mathf.Lerp(1.3f, 0.8f, slime.Look.Viscosity));
@@ -323,9 +330,13 @@ namespace SlimeHub.Minigames
             slime.Deformer.SetFlow(Vector3.zero);
             if (!juice)
                 return;
+            slime.ClearGameplayStretch();
             slime.Deformer.SnapFlow(-normal * 0.55f);
             slime.Deformer.Impact(point, -normal, 2.2f);
-            slime.AddImpactFlatten(-normal, 0.22f);
+            slime.AddImpactFlatten(-normal, 0.36f);
+            burst.Pop(point, slime.Look.Base, 7, 1.8f);
+            rig.Kick(0.08f);
+            shell.PunchHud();
             slime.Deformer.Pulse(0.8f);
             SpawnGoo();
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
@@ -370,15 +381,27 @@ namespace SlimeHub.Minigames
             float height = Mathf.Max(0.2f, acid + 6f);
             acidView.localScale = new Vector3(config.climbHalfWidth * 2f, height, 0.4f);
             acidView.position = new Vector3(0f, acid - height * 0.5f + 0.2f, 0.3f);
+            if (acidLip == null)
+                return;
+            float wave = 1f + Mathf.Sin(Time.time * 5.5f) * 0.05f;
+            acidLip.position = new Vector3(Mathf.Sin(Time.time * 2.2f) * 0.04f, acid + 0.12f, 0.05f);
+            acidLip.localScale = new Vector3(config.climbHalfWidth * 2.15f * wave, 0.14f, 0.55f);
         }
 
         void Follow()
         {
             float y = stuck ? anchor.y : slime.transform.position.y;
-            float focus = y + 1.3f;
-            cam.transform.position = new Vector3(0f, focus, -12f);
+            float lead = 0f;
+            if (!stuck && slime.Body != null)
+            {
+                Vector3 velocity = slime.Body.linearVelocity;
+                lead = Mathf.Clamp(velocity.y * 0.08f, -0.8f, 1.1f);
+                if (velocity.sqrMagnitude > 1.2f)
+                    slime.SetGameplayStretch(velocity.normalized, Mathf.Lerp(1.08f, 1.38f, Mathf.Clamp01(velocity.magnitude / 9f)));
+            }
+            rig.Follow(cam, y + 1.3f, lead, -12f);
             if (backdrop != null)
-                backdrop.position = new Vector3(0f, focus, 3f);
+                backdrop.position = new Vector3(0f, rig.FocusY, 3.5f);
         }
 
         void EnsureAim()

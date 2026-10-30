@@ -313,9 +313,11 @@ namespace SlimeHub.Minigames
         void PlaceMain(float dt)
         {
             float scale = RadiusOf(Mass) / MeshRadius;
-            Vector3 target = Vector3.one * scale;
+            float idle = 1f + Mathf.Sin(Time.time * 5.5f) * 0.025f;
+            Vector3 target = new Vector3(scale * (1f + Mathf.Abs(slide) * 0.02f), scale * idle, scale);
             main.transform.localScale = Vector3.Lerp(main.transform.localScale, target, 1f - Mathf.Exp(-9f * dt));
-            main.transform.SetPositionAndRotation(new Vector3(X, Y, 0f), Lean());
+            float bob = Mathf.Sin(Time.time * 6.2f) * 0.035f;
+            main.transform.SetPositionAndRotation(new Vector3(X, Y + bob, 0f), Lean());
             Flow(main);
         }
 

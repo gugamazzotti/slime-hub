@@ -89,6 +89,31 @@ namespace SlimeHub.Minigames
             nextY = 8f;
         }
 
+        public void Dress(float time)
+        {
+            for (int i = 0; i < alive.Count; i++)
+            {
+                TubeSegment segment = alive[i];
+                for (int h = 0; h < segment.Hazards.Count; h++)
+                {
+                    GameObject view = segment.Hazards[h].View;
+                    if (view == null || !view.activeSelf)
+                        continue;
+                    float bob = 1f + Mathf.Sin(time * 2.1f + segment.Hazards[h].Mouth.y) * 0.04f;
+                    view.transform.localScale = new Vector3(1f, bob, 1f);
+                }
+
+                for (int p = 0; p < segment.Pickups.Count; p++)
+                {
+                    GameObject view = segment.Pickups[p].View;
+                    if (view == null || !view.activeSelf)
+                        continue;
+                    float pulse = 1f + Mathf.Sin(time * 3.6f + p) * 0.12f;
+                    view.transform.localScale = Vector3.one * pulse;
+                }
+            }
+        }
+
         public void Tick(float playerY)
         {
             while (nextY < playerY + 26f && index <= sectionsBeforeSqueeze)

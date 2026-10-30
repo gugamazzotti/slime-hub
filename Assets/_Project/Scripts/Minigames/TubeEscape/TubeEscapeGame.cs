@@ -21,7 +21,6 @@ namespace SlimeHub.Minigames
         SlimeRunnerController runner;
         Camera cam;
         Transform walls;
-        float shake;
         bool squeezing;
         float squeezeTime;
         bool squeezeSound;
@@ -33,6 +32,8 @@ namespace SlimeHub.Minigames
         readonly RunnerBody[] bodies = new RunnerBody[3];
         readonly System.Collections.Generic.List<SlimeActor> globs = new System.Collections.Generic.List<SlimeActor>(8);
         readonly Transform[] bubbles = new Transform[16];
+        FeelBurst burst;
+        SoftCamera rig;
 
         void Awake()
         {
@@ -44,16 +45,12 @@ namespace SlimeHub.Minigames
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 40f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.07f, 0.1f, 0.22f);
+            cam.backgroundColor = LabPalette.TubeSky;
             cam.transform.rotation = Quaternion.identity;
+            rig.FocusY = 2.5f;
 
-            var backdrop = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Destroy(backdrop.GetComponent<Collider>());
-            backdrop.name = "Backdrop";
-            backdrop.transform.localScale = new Vector3(16f, 32f, 1f);
-            backdrop.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(
-                new Color(0.08f, 0.12f, 0.28f, 1f), true, 0f, 0.55f, new Color(0.25f, 0.85f, 1f, 1f));
-            walls = backdrop.transform;
+            walls = LabStage.Build(LabPalette.TubeSky, LabPalette.TubeGrid, 18f, 36f);
+            burst = FeelBurst.Create();
 
             var levelRoot = new GameObject("Level").transform;
             level = new LevelGenerator(levelRoot, config);
@@ -190,6 +187,7 @@ namespace SlimeHub.Minigames
             ResolveContacts();
             AnimateSqueezer();
             DriftBubbles();
+            level.Dress(Time.time);
             FollowCamera();
 
             shell.SetHud(Mathf.RoundToInt(runner.Mass) + " kg", Loc.Format("hud.peak", Mathf.RoundToInt(runner.PeakMass)));
@@ -258,7 +256,9 @@ namespace SlimeHub.Minigames
                         if (pickup.View != null)
                             pickup.View.SetActive(false);
                         runner.Collect(pickup.Mass, new Vector3(pickup.Point.x, pickup.Point.y, 0f));
-                        shake = 0.08f;
+                        burst.Pop(new Vector3(pickup.Point.x, pickup.Point.y, -0.3f), LabPalette.Mint, 7, 2.1f);
+                        rig.Kick(0.05f);
+                        shell.PunchHud();
                         if (ServiceLocator.TryGet<IAudioService>(out var audio))
                             audio.Play(Sfx.Bloop, Mathf.Lerp(1.2f, 0.68f, runner.Mass / 60f));
                         if (ServiceLocator.TryGet<IHapticsService>(out var haptics))
@@ -281,8 +281,10 @@ namespace SlimeHub.Minigames
             trapped.Launch(hazard.View.transform, from, hazard.InteriorLocal, scale);
             glob.Deformer.Pulse(1.6f);
             glob.Deformer.Nudge((hazard.Mouth - from).normalized * 6f);
-            shell.Flash(new Color(1f, 0.12f, 0.16f, 0.5f));
-            shake = 0.22f;
+            shell.Flash(LabPalette.Coral);
+            burst.Pop(from, LabPalette.Coral, 9, 3.1f);
+            rig.Kick(0.16f);
+            shell.PunchHud();
             HitStop.Play(0.12f, 0.05f);
             if (ServiceLocator.TryGet<IAudioService>(out var audio))
                 audio.Play(Sfx.Schlupp, Mathf.Lerp(1.15f, 0.7f, runner.Mass / 60f));
@@ -334,9 +336,15 @@ namespace SlimeHub.Minigames
                 segment.LeftPlate.position = new Vector3(-inset, level.SqueezerY, 0f);
                 segment.RightPlate.position = new Vector3(inset, level.SqueezerY, 0f);
                 runner.PlaySqueeze(segment.Squeeze);
+                float wobble = 1f + Mathf.Sin(Time.time * 16f) * 0.05f * segment.Squeeze;
+                if (segment.LeftPlate != null)
+                    segment.LeftPlate.localScale = new Vector3(0.42f, 3.3f * wobble, 0.45f);
+                if (segment.RightPlate != null)
+                    segment.RightPlate.localScale = new Vector3(0.42f, 3.3f * wobble, 0.45f);
                 if (!squeezeSound && segment.Squeeze > 0.15f)
                 {
                     squeezeSound = true;
+                    rig.Kick(0.1f);
                     if (ServiceLocator.TryGet<IAudioService>(out var audio))
                         audio.Play(Sfx.Squeezer, 0.85f);
                     if (ServiceLocator.TryGet<IHapticsService>(out var haptics))
@@ -347,11 +355,9 @@ namespace SlimeHub.Minigames
 
         void FollowCamera()
         {
-            shake = Mathf.MoveTowards(shake, 0f, Time.unscaledDeltaTime * 1.4f);
-            float ox = Mathf.Sin(Time.unscaledTime * 70f) * shake;
-            float focus = runner.Y + 2.5f;
-            cam.transform.position = new Vector3(ox, focus, -12f);
-            walls.position = new Vector3(0f, focus, 4f);
+            rig.Follow(cam, runner.Y + 2.5f, 0f, -12f);
+            if (walls != null)
+                walls.position = new Vector3(0f, rig.FocusY, 4f);
         }
 
         void EnterGameOver()
@@ -373,6 +379,9 @@ namespace SlimeHub.Minigames
                 return;
             resolved = true;
             HitStop.Cancel();
+            shell.Flash(record ? LabPalette.Mint : LabPalette.Coral);
+            if (record && burst != null)
+                burst.Pop(new Vector3(runner.X, runner.Y, -0.2f), LabPalette.Mint, 10, 2.6f);
             string title = runner.Alive ? Loc.Get("over.squeezed") : Loc.Get("over.dissolved");
             string body = Loc.Outcome(record, reward,
                 Loc.Format("over.points", score),

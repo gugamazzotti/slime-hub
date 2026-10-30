@@ -27,6 +27,8 @@ jobs:
         with:
           path: Library
           key: Library-SlimeHub-WebGL-6000.3.26f1-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-SlimeHub-WebGL-6000.3.26f1-
 
       - name: Build
         uses: game-ci/unity-builder@v4
@@ -73,7 +75,7 @@ jobs:
 
       - name: Publish preview branch
         env:
-          PREVIEW_BRANCH: cursor/preview-climb-aim-2518
+          PREVIEW_BRANCH: cursor/preview-minigames-polish-2518
           SOURCE_DIR: ${{ steps.webgl.outputs.dir }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -86,7 +88,7 @@ jobs:
           git init
           git checkout -b "$PREVIEW_BRANCH"
           git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Preview WebGL da Escalada Pegajosa"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Preview WebGL dos minijogos"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${PREVIEW_BRANCH}"
           sha=$(git rev-parse HEAD)
           url="https://rawcdn.githack.com/${GITHUB_REPOSITORY}/${sha}/index.html"

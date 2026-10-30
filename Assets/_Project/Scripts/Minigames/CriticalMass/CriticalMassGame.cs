@@ -3,6 +3,7 @@ using SlimeHub.Core;
 using SlimeHub.Data;
 using SlimeHub.Gameplay;
 using SlimeHub.Input;
+using SlimeHub.Physics;
 using SlimeHub.UI;
 
 namespace SlimeHub.Minigames
@@ -35,6 +36,11 @@ namespace SlimeHub.Minigames
         int countStep = -1;
         float nextHurt;
         float dentUntil;
+        bool holding;
+        FeelBurst burst;
+        Transform halo;
+        Material haloMaterial;
+        readonly System.Collections.Generic.List<Transform> blades = new System.Collections.Generic.List<Transform>(8);
 
         void Awake()
         {
@@ -46,22 +52,25 @@ namespace SlimeHub.Minigames
             cam.orthographic = true;
             cam.orthographicSize = 4.8f;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.1f, 0.06f, 0.18f);
+            cam.backgroundColor = LabPalette.CritSky;
             cam.transform.position = new Vector3(0f, 0f, -12f);
             cam.transform.rotation = Quaternion.identity;
-
-            var backdrop = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Destroy(backdrop.GetComponent<Collider>());
-            backdrop.transform.position = new Vector3(0f, 0f, 2f);
-            backdrop.transform.localScale = new Vector3(14f, 18f, 1f);
-            backdrop.GetComponent<MeshRenderer>().sharedMaterial = SlimeMaterials.CreateUnlit(
-                new Color(0.12f, 0.07f, 0.22f, 1f), true, 0f, 0.18f, new Color(0.65f, 0.4f, 1f, 1f));
+            LabStage.Build(LabPalette.CritSky, LabPalette.CritGrid, 16f, 20f).position = new Vector3(0f, 0f, 3f);
+            burst = FeelBurst.Create();
 
             ring = new GameObject("Ring").transform;
             BuildRing();
 
             slime = SlimeActor.Create(Vector3.zero, 0.5f, AppQuality.LowMemory ? 1 : 2, false, true);
             ServiceLocator.Get<SlimeCustomizer>().ApplyTo(slime);
+            var haloObject = new GameObject("Halo");
+            haloObject.AddComponent<MeshFilter>().sharedMesh = SlimeMeshFactory.SharedBlob(1, 0.5f);
+            var haloRenderer = haloObject.AddComponent<MeshRenderer>();
+            haloMaterial = SlimeMaterials.CreateGlow();
+            haloRenderer.sharedMaterial = haloMaterial;
+            haloRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            haloRenderer.receiveShadows = false;
+            halo = haloObject.transform;
 
             shell = gameObject.AddComponent<MinigameShell>();
             shell.Build(Loc.Get("game.critical"));
@@ -96,9 +105,15 @@ namespace SlimeHub.Minigames
                 float dist = chamber - depth * 0.35f;
                 block.transform.localPosition = new Vector3(Mathf.Cos(rad), Mathf.Sin(rad), 0f) * dist;
                 block.transform.localRotation = Quaternion.Euler(0f, 0f, deg);
-                block.transform.localScale = hazard
+                Vector3 baseScale = hazard
                     ? new Vector3(0.22f, depth, 0.22f)
                     : Vector3.one * 0.42f;
+                block.transform.localScale = baseScale;
+                var pulse = block.AddComponent<RingPulse>();
+                pulse.Base = baseScale;
+                pulse.Hazard = hazard;
+                if (hazard)
+                    blades.Add(block.transform);
                 Color color = hazard
                     ? new Color(1f, 0.28f, 0.22f, 1f)
                     : new Color(0.62f, 0.92f, 1f, 0.55f);
@@ -140,6 +155,9 @@ namespace SlimeHub.Minigames
                 hold = pointer.Held && !pointer.OverUi;
             }
 
+            bool released = holding && !hold;
+            holding = hold;
+
             float target = hold ? config.critMaxRadius : config.critRestRadius;
             radius = Mathf.SmoothDamp(radius, target, ref radiusVelocity, hold ? 0.09f : 0.14f);
             spin = config.critSpin + survived * config.critSpinGain;
@@ -155,7 +173,9 @@ namespace SlimeHub.Minigames
                 if (Time.unscaledTime > nextHurt)
                 {
                     nextHurt = Time.unscaledTime + 0.28f;
-                    shell.Flash(new Color(1f, 0.1f, 0.15f, 0.45f));
+                    shell.Flash(LabPalette.Coral);
+                    burst.Pop(slime.transform.position + Vector3.right * radius * 0.8f, LabPalette.Coral, 8, 2.4f);
+                    shell.PunchHud();
                     slime.Deformer.Impact(slime.transform.position + Vector3.right * radius, Vector3.left, 2.4f);
                     slime.Deformer.Pulse(0.9f);
                     dentUntil = Time.time + 0.16f;
@@ -176,7 +196,17 @@ namespace SlimeHub.Minigames
                 }
             }
 
+            if (released && !crushed && radius > config.critChamberRadius * 0.78f)
+            {
+                shell.Popup(Loc.Get("hud.safe"), LabPalette.Mint);
+                shell.PunchHud();
+                burst.Pop(slime.transform.position, LabPalette.Mint, 8, 2.2f);
+                if (ServiceLocator.TryGet<IAudioService>(out var clear))
+                    clear.Play(Sfx.Ui, 1.45f, 0.8f);
+            }
+
             PlaceSlime(radius > 1.15f);
+            DressBlades(inBlade);
             shell.SetHud(Mathf.CeilToInt(Mathf.Max(0f, integrity)) + "%", Mathf.FloorToInt(survived) + " s");
             shell.SetMeter(Mathf.Clamp01(integrity / Mathf.Max(1f, config.critIntegrity)));
             if (integrity <= 0f)
@@ -197,9 +227,19 @@ namespace SlimeHub.Minigames
             Vector3 target = new Vector3(center, Mathf.Sin(Time.time * 2.2f) * 0.04f, 0f);
             slime.transform.position = Vector3.Lerp(slime.transform.position, target, 1f - Mathf.Exp(-10f * dt));
             float scale = radius / 0.5f;
-            slime.transform.localScale = Vector3.Lerp(slime.transform.localScale, Vector3.one * scale, 1f - Mathf.Exp(-7f * dt));
+            float squash = Mathf.Clamp(1f + radiusVelocity * 0.22f, 0.76f, 1.24f);
+            Vector3 targetScale = new Vector3(scale * squash, scale / Mathf.Sqrt(squash), scale);
+            slime.transform.localScale = Vector3.Lerp(slime.transform.localScale, targetScale, 1f - Mathf.Exp(-7f * dt));
             slime.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Sin(Time.time * 2.6f) * 7f);
-            slime.ClearGameplayStretch();
+            float stretch = Mathf.Clamp(1f + radiusVelocity * 0.28f, 0.7f, 1.42f);
+            slime.SetGameplayStretch(Vector3.right, stretch);
+            if (halo != null)
+            {
+                halo.position = slime.transform.position + new Vector3(0f, 0f, 0.2f);
+                float haloScale = radius * 2.8f * (1f + Mathf.Sin(Time.time * 3f) * 0.04f);
+                halo.localScale = Vector3.one * haloScale;
+                SlimeMaterials.ApplyGlow(haloMaterial, slime.Look.Rim, 0.03f);
+            }
             if (Time.time < dentUntil)
                 slime.Deformer.SetFlow(Vector3.left * 0.75f);
             else if (pressed)
@@ -215,10 +255,23 @@ namespace SlimeHub.Minigames
             slime.Deformer.Nudge(new Vector3(-radiusVelocity * 3.2f, 0f, 0f));
         }
 
+        void DressBlades(bool hot)
+        {
+            for (int i = 0; i < blades.Count; i++)
+            {
+                RingPulse pulse = blades[i].GetComponent<RingPulse>();
+                if (pulse != null)
+                    pulse.Hot = hot;
+            }
+        }
+
         void EnterOver()
         {
             overTime = 0f;
             resolved = false;
+            if (slime != null)
+                slime.ClearGameplayStretch();
+            burst.Pop(slime.transform.position, LabPalette.Coral, 12, 3.4f);
             HitStop.Play(0.1f, 0.42f);
             score = Mathf.RoundToInt(survived * 10f + pressure * 8f);
             reward = Mathf.Max(2, Mathf.RoundToInt(survived * 1.4f));
@@ -235,6 +288,7 @@ namespace SlimeHub.Minigames
             string body = Loc.Outcome(record, reward,
                 Loc.Format("over.points", score),
                 Loc.Format("over.seconds", Mathf.FloorToInt(survived)));
+            shell.Flash(record ? LabPalette.Mint : LabPalette.Coral);
             shell.ShowGameOver(Loc.Get("over.centrifuge"), body);
             shell.ShowCountdown("");
         }

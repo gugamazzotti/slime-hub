@@ -25,11 +25,15 @@ namespace SlimeHub.UI
         Image meterFill;
         float popupLeft;
         bool overShown;
+        Vector2 popupHome;
 
         public void Build(string modeName)
         {
             Canvas canvas = UiFactory.CreateCanvas("MinigameUI", 30);
             canvas.transform.SetParent(transform, false);
+            var fade = canvas.gameObject.AddComponent<CanvasGroup>();
+            fade.alpha = 0f;
+            JuiceTween.Fade(fade, 1f, 0.28f);
             RectTransform safe = UiFactory.SafeArea(canvas.transform);
 
             var plate = UiFactory.Picture(safe, "plate", true);
@@ -40,7 +44,7 @@ namespace SlimeHub.UI
             plateRect.offsetMin = new Vector2(16f, -168f);
             plateRect.offsetMax = new Vector2(-16f, -12f);
 
-            scoreText = UiFactory.Label(plate.transform, "0", 58, TextAnchor.MiddleLeft, new Color(0.08f, 0.16f, 0.28f, 1f));
+            scoreText = UiFactory.Label(plate.transform, "0", 64, TextAnchor.MiddleLeft, new Color(0.07f, 0.14f, 0.24f, 1f));
             var scoreRect = scoreText.rectTransform;
             scoreRect.anchorMin = new Vector2(0f, 0.42f);
             scoreRect.anchorMax = new Vector2(1f, 1f);
@@ -96,7 +100,7 @@ namespace SlimeHub.UI
             hintText.resizeTextMinSize = 18;
             hintText.resizeTextMaxSize = 32;
 
-            countdown = UiFactory.Label(safe, "", 140, TextAnchor.MiddleCenter, Color.white);
+            countdown = UiFactory.Label(safe, "", 150, TextAnchor.MiddleCenter, new Color(0.97f, 0.98f, 0.93f, 1f));
             UiFactory.Stretch(countdown.rectTransform);
             UiFactory.Outline(countdown);
 
@@ -113,6 +117,7 @@ namespace SlimeHub.UI
             popupRect.offsetMin = Vector2.zero;
             popupRect.offsetMax = Vector2.zero;
             popup.gameObject.SetActive(false);
+            popupHome = popup.rectTransform.anchoredPosition;
             UiFactory.Outline(popup);
 
             pauseRoot = BuildModal(safe, Loc.Get("shell.pause"), out _, out var pauseBody);
@@ -165,10 +170,19 @@ namespace SlimeHub.UI
                 subText.text = sub;
         }
 
+        public void PunchHud()
+        {
+            if (scoreText != null)
+                JuiceTween.PunchScale(scoreText.rectTransform, 0.16f, 0.18f);
+        }
+
         public void SetMeter(float amount)
         {
-            if (meterFill != null)
-                meterFill.fillAmount = Mathf.Clamp01(amount);
+            if (meterFill == null)
+                return;
+            float filled = Mathf.Clamp01(amount);
+            meterFill.fillAmount = filled;
+            meterFill.color = Color.Lerp(new Color(1f, 0.46f, 0.4f, 1f), new Color(0.55f, 1f, 0.66f, 1f), filled);
         }
 
         public void SetHint(string value)
@@ -195,13 +209,19 @@ namespace SlimeHub.UI
             popup.gameObject.SetActive(true);
             popup.text = text;
             popup.color = color;
-            popupLeft = 0.7f;
-            JuiceTween.PunchScale(popup.rectTransform, 0.16f, 0.25f);
+            popup.rectTransform.anchoredPosition = popupHome;
+            popupLeft = 0.75f;
+            JuiceTween.PunchScale(popup.rectTransform, 0.18f, 0.22f);
         }
 
         public void ShowPause(bool show)
         {
             pauseRoot.SetActive(show);
+            if (!show || pauseRoot.transform.childCount == 0)
+                return;
+            Transform window = pauseRoot.transform.GetChild(0);
+            window.localScale = Vector3.one * 0.88f;
+            JuiceTween.Scale(window, Vector3.one, 0.24f, Ease.OutBack);
         }
 
         public void ShowGameOver(string title, string body)
@@ -212,8 +232,9 @@ namespace SlimeHub.UI
             overTitle.text = title;
             overBody.text = body;
             overRoot.SetActive(true);
-            overRoot.transform.localScale = Vector3.one * 0.86f;
-            JuiceTween.Scale(overRoot.transform, Vector3.one, 0.32f, Ease.OutBack);
+            Transform window = overRoot.transform.childCount > 0 ? overRoot.transform.GetChild(0) : overRoot.transform;
+            window.localScale = Vector3.one * 0.82f;
+            JuiceTween.Scale(window, Vector3.one, 0.36f, Ease.OutBack);
         }
 
         void Update()
@@ -229,8 +250,9 @@ namespace SlimeHub.UI
             {
                 popupLeft -= Time.unscaledDeltaTime;
                 Color color = popup.color;
-                color.a = Mathf.Clamp01(popupLeft / 0.25f);
+                color.a = Mathf.Clamp01(popupLeft / 0.28f);
                 popup.color = color;
+                popup.rectTransform.anchoredPosition = popupHome + new Vector2(0f, (0.75f - popupLeft) * 90f);
                 if (popupLeft <= 0f)
                     popup.gameObject.SetActive(false);
             }

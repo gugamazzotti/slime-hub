@@ -3,7 +3,6 @@ using UnityEngine;
 using SlimeHub.Core;
 using SlimeHub.Gameplay;
 using SlimeHub.Input;
-using SlimeHub.Physics;
 using SlimeHub.UI;
 
 namespace SlimeHub.Minigames
@@ -40,13 +39,13 @@ namespace SlimeHub.Minigames
         bool won;
         bool resolved;
         float overTime;
-        Material physicsMat;
+        PhysicsMaterial physicsMat;
 
         void Awake()
         {
             GameServices.Ensure();
-            savedGravity = Physics.gravity;
-            Physics.gravity = new Vector3(0f, -16f, 0f);
+            savedGravity = UnityEngine.Physics.gravity;
+            UnityEngine.Physics.gravity = new Vector3(0f, -16f, 0f);
             cam = Camera.main;
             cam.orthographic = true;
             cam.orthographicSize = 4.6f;
@@ -87,7 +86,7 @@ namespace SlimeHub.Minigames
 
         void OnDestroy()
         {
-            Physics.gravity = savedGravity;
+            UnityEngine.Physics.gravity = savedGravity;
         }
 
         void Box(Vector3 pos, Vector3 scale, Color color)
@@ -106,7 +105,7 @@ namespace SlimeHub.Minigames
             float diameter = Radii[tier] * 2f;
             go.transform.localScale = Vector3.one * diameter;
             var filter = go.AddComponent<MeshFilter>();
-            filter.sharedMesh = SlimeMeshFactory.SharedBlob(1, 0.5f);
+            filter.sharedMesh = SlimeHub.Physics.SlimeMeshFactory.SharedBlob(1, 0.5f);
             var renderer = go.AddComponent<MeshRenderer>();
             Material jelly = SlimeMaterials.CreateJelly();
             Color color = Colors[tier];
@@ -210,7 +209,7 @@ namespace SlimeHub.Minigames
             if (ghost == null)
                 return;
             Vector3 pos = ghost.transform.position;
-            if (Physics.OverlapSphere(pos, Radii[ghost.Tier] * 0.9f).Length > 0)
+            if (UnityEngine.Physics.OverlapSphere(pos, Radii[ghost.Tier] * 0.9f).Length > 0)
             {
                 ghost.Squash = 0.2f;
                 return;

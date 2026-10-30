@@ -1,5 +1,6 @@
 using UnityEngine;
 using SlimeHub.Core;
+using SlimeHub.Data;
 using SlimeHub.Gameplay;
 
 namespace SlimeHub.Minigames

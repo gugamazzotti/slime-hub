@@ -37,8 +37,8 @@ namespace SlimeHub.Minigames
         void Awake()
         {
             GameServices.Ensure();
-            savedGravity = Physics.gravity;
-            Physics.gravity = new Vector3(0f, -20f, 0f);
+            savedGravity = UnityEngine.Physics.gravity;
+            UnityEngine.Physics.gravity = new Vector3(0f, -20f, 0f);
             cam = Camera.main;
             cam.orthographic = true;
             cam.orthographicSize = 6.2f;
@@ -78,7 +78,7 @@ namespace SlimeHub.Minigames
 
         void OnDestroy()
         {
-            Physics.gravity = savedGravity;
+            UnityEngine.Physics.gravity = savedGravity;
         }
 
         void SpawnPad(bool wide)

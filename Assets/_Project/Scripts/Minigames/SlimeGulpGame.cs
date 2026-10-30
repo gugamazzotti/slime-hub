@@ -2,7 +2,6 @@ using UnityEngine;
 using SlimeHub.Core;
 using SlimeHub.Gameplay;
 using SlimeHub.Input;
-using SlimeHub.Physics;
 using SlimeHub.UI;
 
 namespace SlimeHub.Minigames
@@ -67,7 +66,7 @@ namespace SlimeHub.Minigames
         {
             var go = new GameObject(name);
             go.transform.localScale = Vector3.one * radius * 2f;
-            go.AddComponent<MeshFilter>().sharedMesh = SlimeMeshFactory.SharedBlob(1, 0.5f);
+            go.AddComponent<MeshFilter>().sharedMesh = SlimeHub.Physics.SlimeMeshFactory.SharedBlob(1, 0.5f);
             var renderer = go.AddComponent<MeshRenderer>();
             Material jelly = SlimeMaterials.CreateJelly();
             SlimeMaterials.ApplyJelly(jelly, color, Color.Lerp(color, Color.white, 0.5f), 0f, 0.25f, 0f, 0.2f, 0.03f, radius);

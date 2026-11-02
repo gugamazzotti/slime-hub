@@ -329,9 +329,9 @@ namespace SlimeHub.UI
         void BuildGames()
         {
             Clear(modalBody);
-            GameCard(Loc.Get("game.tube"), Loc.Get("game.tube.body"), BoardIds.Tube, SceneNames.Tube);
-            GameCard(Loc.Get("game.critical"), Loc.Get("game.critical.body"), BoardIds.Critical, SceneNames.Critical);
-            GameCard(Loc.Get("game.climb"), Loc.Get("game.climb.body"), BoardIds.Climb, SceneNames.Climb);
+            GameCard(Loc.Get("game.hop"), Loc.Get("game.hop.body"), BoardIds.Hop, SceneNames.Hop);
+            GameCard(Loc.Get("game.merge"), Loc.Get("game.merge.body"), BoardIds.Merge, SceneNames.Merge);
+            GameCard(Loc.Get("game.gulp"), Loc.Get("game.gulp.body"), BoardIds.Gulp, SceneNames.Gulp);
         }
 
         void GameCard(string title, string body, string board, string scene)
@@ -339,7 +339,7 @@ namespace SlimeHub.UI
             Section(title);
             Note(body);
             int best = boardService().GetBest(board);
-            string shown = board == BoardIds.Climb ? (best / 10f).ToString("0.0") + " m" : best.ToString();
+            string shown = best.ToString();
             Note(Loc.Format("games.record", shown));
             UiFactory.Button(modalBody, Loc.Get("games.enter"), () => SceneFlow.Load(scene), 112f, UiFactory.ButtonTone.Solid);
         }

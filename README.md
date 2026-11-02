@@ -12,11 +12,11 @@ The hub is a water tank in a cartoon lab. The slime is a soft fluid: drag it, sq
 
 Biomass is the currency. Daily missions, minigame scores, and fusion spends are stored on the device. There is no account and no network backend.
 
-Three minigames open from the hub:
+Three minigames open from the hub. Each one pays biomass and can complete a daily mission:
 
-- **Tube Escape.** Steer a slime down a glass tube, split around hazards, and squeeze through the narrow gaps.
-- **Critical Mass.** Hold to inflate the blob inside a ring of blades. Grow it without popping.
-- **Sticky Climb.** Pull the slime up sticky walls, launch it, and stay above the rising acid.
+- **Jelly Hop.** Slide sideways. The slime bounces on its own. Miss a platform and the run ends.
+- **Slime Merge.** Drop blobs into a jar. Two of the same size melt into a bigger one.
+- **Gulp.** Drag into the green snacks and stay off the red ones.
 
 The interface follows the phone language: Portuguese, Spanish, or English.
 

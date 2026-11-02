@@ -4,9 +4,9 @@ namespace SlimeHub.Core
     {
         public const string Boot = "0_Boot";
         public const string Hub = "1_Terrarium";
-        public const string Tube = "2_MG_TubeEscape";
-        public const string Critical = "3_MG_CriticalMass";
-        public const string Climb = "4_MG_StickyClimb";
+        public const string Hop = "2_MG_JellyHop";
+        public const string Merge = "3_MG_SlimeMerge";
+        public const string Gulp = "4_MG_SlimeGulp";
     }
 
     public static class SceneFlow

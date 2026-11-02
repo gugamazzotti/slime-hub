@@ -15,9 +15,9 @@ namespace SlimeHub.Core
 
     public enum MissionMetric
     {
-        TubeMass = 0,
-        CriticalSeconds = 1,
-        ClimbHeight = 2
+        HopLands = 0,
+        MergeScore = 1,
+        GulpEaten = 2
     }
 
     public enum CoreKind
@@ -37,8 +37,8 @@ namespace SlimeHub.Core
 
     public static class BoardIds
     {
-        public const string Tube = "tube";
-        public const string Critical = "critical";
-        public const string Climb = "climb";
+        public const string Hop = "hop";
+        public const string Merge = "merge";
+        public const string Gulp = "gulp";
     }
 }

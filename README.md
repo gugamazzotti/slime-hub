@@ -15,7 +15,7 @@ Biomass is the currency. Daily missions, minigame scores, and fusion spends are 
 Three minigames open from the hub. Each one pays biomass and can complete a daily mission:
 
 - **Jelly Hop.** Slide sideways. The slime bounces on its own. Miss a platform and the run ends.
-- **Slime Merge.** Drop blobs into a jar. Two of the same size melt into a bigger one.
+- **Slime Merge.** Drop blobs into a jar. The next blob sits in the corner. Two of the same size melt into a bigger one.
 - **Gulp.** Drag into the green snacks and stay off the red ones.
 
 The interface follows the phone language: Portuguese, Spanish, or English.

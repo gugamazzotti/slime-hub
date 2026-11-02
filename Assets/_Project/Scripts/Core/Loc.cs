@@ -47,7 +47,7 @@ namespace SlimeHub.Core
             Add("game.hop", "Jelly Hop", "Pulo de Gelatina", "Salto de Gelatina");
             Add("game.hop.body", "Slide sideways. The slime bounces by itself. Don't miss a pad.", "Deslize para os lados. O slime quica sozinho. Não erre a plataforma.", "Desliza a los lados. El slime rebota solo. No falles la plataforma.");
             Add("game.merge", "Slime Merge", "Fusão", "Fusión");
-            Add("game.merge.body", "Drop slimes. Two of the same size melt into a bigger one.", "Solte slimes. Dois do mesmo tamanho viram um maior.", "Suelta slimes. Dos del mismo tamaño se vuelven uno mayor.");
+            Add("game.merge.body", "Drop slimes. The corner shows the next one. Two of the same size melt into a bigger one.", "Solte slimes. O canto mostra o próximo. Dois do mesmo tamanho viram um maior.", "Suelta slimes. La esquina muestra el siguiente. Dos del mismo tamaño se vuelven uno mayor.");
             Add("game.gulp", "Gulp", "Gula", "Glotón");
             Add("game.gulp.body", "Drag into the green snacks. Stay away from the red ones.", "Arraste até os petiscos verdes. Fuja dos vermelhos.", "Arrastra hacia las golosinas verdes. Aléjate de las rojas.");
             Add("games.record", "Best  {0}", "Recorde  {0}", "Récord  {0}");
@@ -78,6 +78,7 @@ namespace SlimeHub.Core
             Add("hud.pull", "Pull and release", "Puxe e solte", "Tira y suelta");
             Add("hud.hop", "Slide to steer", "Deslize para guiar", "Desliza para guiar");
             Add("hud.merge", "Release to drop", "Solte para cair", "Suelta para caer");
+            Add("hud.next", "Next", "Próximo", "Siguiente");
             Add("hud.gulp", "Eat green, dodge red", "Coma o verde, fuja do vermelho", "Come lo verde, huye de lo rojo");
 
             Add("over.record", "New record!", "Novo recorde!", "¡Nuevo récord!");

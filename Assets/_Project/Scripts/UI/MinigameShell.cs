@@ -23,6 +23,11 @@ namespace SlimeHub.UI
         Text popup;
         Text hintText;
         Image meterFill;
+        RectTransform safeRoot;
+        GameObject nextRoot;
+        RectTransform nextHolder;
+        Image nextBlob;
+        Image nextRim;
         float popupLeft;
         bool overShown;
 
@@ -31,6 +36,7 @@ namespace SlimeHub.UI
             Canvas canvas = UiFactory.CreateCanvas("MinigameUI", 30);
             canvas.transform.SetParent(transform, false);
             RectTransform safe = UiFactory.SafeArea(canvas.transform);
+            safeRoot = safe;
 
             var plate = UiFactory.Picture(safe, "plate", true);
             var plateRect = plate.rectTransform;
@@ -175,6 +181,87 @@ namespace SlimeHub.UI
         {
             if (hintText != null)
                 hintText.text = value ?? "";
+        }
+
+        public void ShowNext(Color color, float size)
+        {
+            EnsureNext();
+            nextRoot.SetActive(true);
+            color.a = 1f;
+            nextBlob.color = color;
+            Color rim = Color.Lerp(color, new Color(0.08f, 0.14f, 0.2f), 0.42f);
+            rim.a = 1f;
+            nextRim.color = rim;
+            float diameter = Mathf.Lerp(46f, 64f, Mathf.Clamp01(size));
+            nextHolder.sizeDelta = new Vector2(diameter, diameter);
+            JuiceTween.PunchScale(nextHolder, 0.16f, 0.22f);
+        }
+
+        void EnsureNext()
+        {
+            if (nextRoot != null)
+                return;
+
+            Image plate = UiFactory.Picture(safeRoot, "plate", true);
+            nextRoot = plate.gameObject;
+            var plateRect = plate.rectTransform;
+            plateRect.anchorMin = new Vector2(1f, 1f);
+            plateRect.anchorMax = new Vector2(1f, 1f);
+            plateRect.pivot = new Vector2(1f, 1f);
+            plateRect.sizeDelta = new Vector2(268f, 118f);
+            plateRect.anchoredPosition = new Vector2(-16f, -248f);
+
+            nextHolder = UiFactory.Rect("NextHolder", plate.transform);
+            nextHolder.anchorMin = new Vector2(0f, 0.5f);
+            nextHolder.anchorMax = new Vector2(0f, 0.5f);
+            nextHolder.pivot = new Vector2(0.5f, 0.5f);
+            nextHolder.sizeDelta = new Vector2(58f, 58f);
+            nextHolder.anchoredPosition = new Vector2(86f, 0f);
+
+            nextRim = BlobImage(nextHolder, "Rim");
+            UiFactory.Stretch(nextRim.rectTransform);
+            nextRim.rectTransform.offsetMin = new Vector2(-5f, -5f);
+            nextRim.rectTransform.offsetMax = new Vector2(5f, 5f);
+
+            nextBlob = BlobImage(nextHolder, "Blob");
+            UiFactory.Stretch(nextBlob.rectTransform);
+            nextBlob.rectTransform.offsetMin = new Vector2(4f, 4f);
+            nextBlob.rectTransform.offsetMax = new Vector2(-4f, -4f);
+
+            var shineRect = UiFactory.Rect("Shine", nextBlob.transform);
+            shineRect.anchorMin = new Vector2(0.16f, 0.5f);
+            shineRect.anchorMax = new Vector2(0.46f, 0.82f);
+            shineRect.offsetMin = Vector2.zero;
+            shineRect.offsetMax = Vector2.zero;
+            var shine = shineRect.gameObject.AddComponent<Image>();
+            shine.sprite = UiFactory.Rounded();
+            shine.color = new Color(1f, 1f, 1f, 0.8f);
+            shine.raycastTarget = false;
+
+            Text label = UiFactory.Label(plate.transform, Loc.Get("hud.next"), 26, TextAnchor.MiddleLeft, new Color(0.1f, 0.2f, 0.32f, 1f));
+            var labelRect = label.rectTransform;
+            labelRect.anchorMin = new Vector2(0f, 0f);
+            labelRect.anchorMax = new Vector2(1f, 1f);
+            labelRect.offsetMin = new Vector2(124f, 16f);
+            labelRect.offsetMax = new Vector2(-18f, -16f);
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 16;
+            label.resizeTextMaxSize = 28;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+
+            if (countdown != null)
+                nextRoot.transform.SetSiblingIndex(countdown.transform.GetSiblingIndex());
+        }
+
+        static Image BlobImage(Transform parent, string name)
+        {
+            RectTransform rect = UiFactory.Rect(name, parent);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.sprite = UiFactory.Rounded();
+            image.type = Image.Type.Simple;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            return image;
         }
 
         public void ShowCountdown(string text)

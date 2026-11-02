@@ -75,7 +75,7 @@ jobs:
 
       - name: Publish preview branch
         env:
-          PREVIEW_BRANCH: cursor/preview-new-slime-minigames-2518
+          PREVIEW_BRANCH: cursor/preview-2026-11-02-proximo-fusao
           SOURCE_DIR: ${{ steps.webgl.outputs.dir }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -88,7 +88,7 @@ jobs:
           git init
           git checkout -b "$PREVIEW_BRANCH"
           git add -A
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Preview WebGL dos novos minijogos"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -m "Preview WebGL do próximo slime na fusão"
           git push --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${PREVIEW_BRANCH}"
           sha=$(git rev-parse HEAD)
           url="https://rawcdn.githack.com/${GITHUB_REPOSITORY}/${sha}/index.html"

@@ -82,6 +82,7 @@ namespace SlimeHub.Minigames
             shell.ResumePressed += () => SetPhase(Phase.Play);
             shell.Home += () => SceneFlow.Load(SceneNames.Hub);
             shell.Retry += () => SceneFlow.Load(SceneNames.Merge);
+            ShowUpcoming();
         }
 
         void OnDestroy()
@@ -226,6 +227,15 @@ namespace SlimeHub.Minigames
             int tier = nextTier;
             nextTier = Random.value < 0.62f ? 0 : 1;
             ghost = Spawn(tier, new Vector3(aimX, 6.15f, 0f), true);
+            ShowUpcoming();
+        }
+
+        void ShowUpcoming()
+        {
+            int tier = Mathf.Clamp(nextTier, 0, Colors.Length - 1);
+            float span = Radii[1] - Radii[0];
+            float size = span <= 0.001f ? 0f : (Radii[tier] - Radii[0]) / span;
+            shell.ShowNext(Colors[tier], size);
         }
 
         public void QueueMerge(MergeBlob a, MergeBlob b)
